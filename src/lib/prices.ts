@@ -1,11 +1,14 @@
 import type { Offer, Trip } from '../types';
-import { getSettings } from './settings';
-import { nearestAirport } from './airports';
+import { DEFAULT_HELPER_URL, getSettings } from './settings';
+import { nearbyAirports, nearestAirport, type Airport } from './airports';
 import { estimateLeg, itinerary, legRoute, toISO } from './estimate';
 
 /** Laagste gevonden vliegprijs per dag (per persoon). */
 export interface DayFare {
   price: number;
+  /** Vertrek- en aankomstluchthaven (gevuld bij vergelijking van luchthavens) */
+  from?: string;
+  to?: string;
   airline?: string;
   transfers?: number;
   departureAt?: string;
@@ -26,8 +29,10 @@ function persist() {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(memory)); } catch { /* cache is optioneel */ }
 }
 
-export function cachedMonth(origin: string, dest: string, month: string): MonthFares | undefined {
-  const e = memory[`${origin}-${dest}-${month}`];
+export type FareSource = 'tp' | 'ryanair';
+
+export function cachedMonth(origin: string, dest: string, month: string, source: FareSource = 'tp'): MonthFares | undefined {
+  const e = memory[`${source === 'tp' ? '' : `${source}:`}${origin}-${dest}-${month}`];
   return e && Date.now() - e.at < TTL ? e.fares : undefined;
 }
 
@@ -73,6 +78,40 @@ export async function fetchFlightMonth(origin: string, dest: string, month: stri
   return fares;
 }
 
+/** Ryanair-prijzen per dag via de lokale prijshulp op je eigen computer (tools/fare-helper). */
+export async function fetchRyanairMonth(from: string, to: string, month: string): Promise<MonthFares> {
+  const hit = cachedMonth(from, to, month, 'ryanair');
+  if (hit) return hit;
+  const base = (getSettings().fareHelperUrl || DEFAULT_HELPER_URL).replace(/\/$/, '');
+  let res: Response;
+  try {
+    res = await fetch(`${base}/ryanair/month?from=${from}&to=${to}&month=${month}`);
+  } catch {
+    throw new PriceError('Prijshulp niet bereikbaar. Draait "node tools/fare-helper/server.mjs" op deze computer?');
+  }
+  if (!res.ok) throw new PriceError((await res.json().catch(() => null))?.error ?? `Prijshulp gaf fout ${res.status}`);
+  const body: { fares: Record<string, { price: number; departureAt?: string }> } = await res.json();
+  const fares: MonthFares = {};
+  for (const [day, f] of Object.entries(body.fares)) fares[day] = { price: f.price, departureAt: f.departureAt, airline: 'Ryanair', from, to };
+  memory[`ryanair:${from}-${to}-${month}`] = { at: Date.now(), fares };
+  persist();
+  return fares;
+}
+
+export async function checkHelper(): Promise<boolean> {
+  const base = (getSettings().fareHelperUrl || DEFAULT_HELPER_URL).replace(/\/$/, '');
+  try { return (await fetch(`${base}/health`)).ok; } catch { return false; }
+}
+
+export interface AirportPair { from: Airport; to: Airport }
+
+/** Luchthavencombinaties binnen 150 km van vertrek en bestemming. */
+export function airportPairs(trip: Trip, i: number): AirportPair[] {
+  const a = nearbyAirports(trip.stops[i - 1].place, 150, 3);
+  const b = nearbyAirports(trip.stops[i].place, 150, 3);
+  return a.flatMap((from) => b.filter((to) => to.iata !== from.iata).map((to) => ({ from, to })));
+}
+
 /** IATA-codes voor een vliegtraject, of null als er geen luchthaven in de buurt is. */
 export function flightCodes(trip: Trip, i: number): { from: string; to: string } | null {
   const a = nearestAirport(trip.stops[i - 1].place);
@@ -92,9 +131,19 @@ export function legPriceOn(trip: Trip, i: number, date: string): PricePoint {
     return { amount: best.price, source: 'offer', label: best.provider };
   }
   if (leg.mode === 'plane') {
+    const month = date.slice(0, 7);
+    const candidates: DayFare[] = [];
     const codes = flightCodes(trip, i);
-    const fare = codes && cachedMonth(codes.from, codes.to, date.slice(0, 7))?.[date];
-    if (fare) return { amount: fare.price * trip.travelers, source: 'calendar', label: fare.airline };
+    const tp = codes && cachedMonth(codes.from, codes.to, month)?.[date];
+    if (tp) candidates.push({ ...tp, from: codes.from, to: codes.to });
+    for (const { from, to } of airportPairs(trip, i)) {
+      const r = cachedMonth(from.iata, to.iata, month, 'ryanair')?.[date];
+      if (r) candidates.push(r);
+    }
+    if (candidates.length) {
+      const best = candidates.reduce((x, y) => (y.price < x.price ? y : x));
+      return { amount: best.price * trip.travelers, source: 'calendar', label: `${best.airline ?? 'Vlucht'} ${best.from}→${best.to}` };
+    }
   }
   // Prijzen zonder datum (bijv. auto, vaste OV-prijs) gelden voor elke dag.
   const undated = (leg.offers ?? []).filter((o) => !o.date);
@@ -128,20 +177,29 @@ export function compareStartDates(trip: Trip, starts: string[]): StartDateOption
   });
 }
 
-/** Maanden (YYYY-MM) die nodig zijn om vliegtrajecten voor alle startdatums te prijzen. */
-export function monthsNeeded(trip: Trip, starts: string[]): { i: number; from: string; to: string; month: string }[] {
-  const out = new Map<string, { i: number; from: string; to: string; month: string }>();
+/** Prijsmaanden die nodig zijn om vliegtrajecten voor alle startdatums te prijzen. */
+export function monthsNeeded(trip: Trip, starts: string[]): { source: FareSource; from: string; to: string; month: string }[] {
+  const { travelpayoutsToken, ryanairHelper } = getSettings();
+  const out = new Map<string, { source: FareSource; from: string; to: string; month: string }>();
   for (const start of starts) {
     const it = itinerary({ ...trip, startDate: start });
     trip.stops.forEach((s, i) => {
       if (i === 0 || s.leg?.mode !== 'plane') return;
-      const codes = flightCodes(trip, i);
-      if (!codes) return;
       const month = toISO(it[i - 1].departure).slice(0, 7);
-      out.set(`${codes.from}-${codes.to}-${month}`, { i, ...codes, month });
+      const codes = flightCodes(trip, i);
+      if (travelpayoutsToken && codes) out.set(`tp:${codes.from}-${codes.to}-${month}`, { source: 'tp', ...codes, month });
+      if (ryanairHelper) {
+        for (const p of airportPairs(trip, i)) {
+          out.set(`ryanair:${p.from.iata}-${p.to.iata}-${month}`, { source: 'ryanair', from: p.from.iata, to: p.to.iata, month });
+        }
+      }
     });
   }
   return [...out.values()];
+}
+
+export function fetchMonth(n: { source: FareSource; from: string; to: string; month: string }, currency = 'EUR'): Promise<MonthFares> {
+  return n.source === 'tp' ? fetchFlightMonth(n.from, n.to, n.month, currency) : fetchRyanairMonth(n.from, n.to, n.month);
 }
 
 export function cheapestOffer(offers: Offer[] | undefined): Offer | undefined {

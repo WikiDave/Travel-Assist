@@ -85,3 +85,19 @@ describe('dagberekening fiets/hike', () => {
     expect(pts[0].lon).toBeCloseTo(4.5, 1);
   });
 });
+
+import { nearbyAirports } from '../airports';
+import { airlineLinks } from '../links';
+describe('luchthavens in de buurt', () => {
+  it('vindt Schiphol, Rotterdam en Eindhoven rond Amsterdam', () => {
+    const codes = nearbyAirports(ams).map((a) => a.iata);
+    expect(codes[0]).toBe('AMS');
+    expect(codes).toContain('EIN');
+    expect(codes).toContain('RTM');
+  });
+  it('bouwt Ryanair- en Wizz Air-links', () => {
+    const [ry, wz] = airlineLinks('EIN', 'AGP', new Date(2026, 11, 1), 2);
+    expect(ry.url).toContain('dateOut=2026-12-01&isReturn=false&originIata=EIN&destinationIata=AGP');
+    expect(wz.url).toBe('https://wizzair.com/nl-nl/booking/select-flight/EIN/AGP/2026-12-01/null/2/0/0/null');
+  });
+});

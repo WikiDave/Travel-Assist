@@ -44,6 +44,18 @@ const AIRPORTS: [string, string, number, number][] = [
   ['SYD', 'Sydney', -33.94, 151.18], ['MEL', 'Melbourne', -37.67, 144.84], ['AKL', 'Auckland', -37.01, 174.79],
 ];
 
+/** Regionale luchthavens die veel door prijsvliegers worden gebruikt (alleen in de vergelijking). */
+const REGIONAL: [string, string, number, number][] = [
+  ['MST', 'Maastricht', 50.91, 5.77], ['GRQ', 'Groningen', 53.12, 6.58], ['NRN', 'Weeze', 51.6, 6.14],
+  ['DTM', 'Dortmund', 51.52, 7.61], ['HHN', 'Frankfurt-Hahn', 49.95, 7.26], ['FMM', 'Memmingen', 47.99, 10.24],
+  ['FKB', 'Karlsruhe/Baden-Baden', 48.78, 8.08], ['BRE', 'Bremen', 53.05, 8.79], ['LUX', 'Luxemburg', 49.63, 6.21],
+  ['ANR', 'Antwerpen', 51.19, 4.46], ['LGG', 'Luik', 50.64, 5.44], ['BVA', 'Parijs Beauvais', 49.45, 2.11],
+  ['LTN', 'Londen Luton', 51.87, -0.37], ['BGY', 'Milaan Bergamo', 45.67, 9.7], ['CIA', 'Rome Ciampino', 41.8, 12.59],
+  ['TSF', 'Venetië Treviso', 45.65, 12.19], ['GRO', 'Girona', 41.9, 2.76], ['REU', 'Reus', 41.15, 1.17],
+  ['BTS', 'Bratislava', 48.17, 17.21], ['GDN', 'Gdańsk', 54.38, 18.47], ['KTW', 'Katowice', 50.47, 19.08],
+  ['VNO', 'Vilnius', 54.63, 25.29], ['TLL', 'Tallinn', 59.41, 24.83], ['BRS', 'Bristol', 51.38, -2.72],
+];
+
 export interface Airport { iata: string; city: string; lat: number; lon: number; distanceKm: number }
 
 export function nearestAirport(p: { lat: number; lon: number }): Airport | null {
@@ -53,4 +65,13 @@ export function nearestAirport(p: { lat: number; lon: number }): Airport | null 
     if (!best || d < best.distanceKm) best = { iata, city, lat, lon, distanceKm: d };
   }
   return best && best.distanceKm < 250 ? best : null;
+}
+
+/** Alle luchthavens binnen `radiusKm`, dichtstbijzijnde eerst. */
+export function nearbyAirports(p: { lat: number; lon: number }, radiusKm = 150, max = 4): Airport[] {
+  return [...AIRPORTS, ...REGIONAL]
+    .map(([iata, city, lat, lon]) => ({ iata, city, lat, lon, distanceKm: haversineKm(p, { lat, lon }) }))
+    .filter((a) => a.distanceKm <= radiusKm)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, max);
 }

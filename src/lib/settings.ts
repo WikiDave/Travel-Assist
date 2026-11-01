@@ -5,7 +5,12 @@ export interface Settings {
   travelpayoutsToken?: string;
   /** Optionele eigen proxy (bijv. Cloudflare Worker) als de API niet direct vanuit de browser werkt */
   priceProxyUrl?: string;
+  /** Lokale prijshulp (tools/fare-helper) gebruiken voor Ryanair-prijzen */
+  ryanairHelper?: boolean;
+  fareHelperUrl?: string;
 }
+
+export const DEFAULT_HELPER_URL = 'http://localhost:8787';
 
 const KEY = 'travel-assist:settings:v1';
 let settings: Settings = (() => {

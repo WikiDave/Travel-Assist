@@ -235,3 +235,9 @@ details summary { cursor: pointer; color: var(--brand); margin: 6px 0; }
 .fare-dn { font-size: 0.68rem; }
 .fare-p { font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .settings summary { color: var(--text); }
+.airport-compare { margin: 8px 0; }
+.links.compact { margin: 4px 0 0; gap: 4px; }
+.links.compact .link-btn { padding: 3px 7px; font-size: 0.75rem; }
+.helper-settings { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 4px; }
+.helper-settings .badge { margin-left: 6px; }
+.db-fill.guess { background: repeating-linear-gradient(45deg, #ccfbf1 0 4px, #f0fdfa 4px 8px); }

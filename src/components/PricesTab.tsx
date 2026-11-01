@@ -4,10 +4,11 @@ import { updateTrip, uid } from '../lib/store';
 import { addDays, fmtDate, fmtMoney, itinerary, legEstimate, parseDate, toISO } from '../lib/estimate';
 import { MODES } from '../lib/modes';
 import { flexLinks, stayLinks, transportLinks } from '../lib/links';
-import { compareStartDates, fetchFlightMonth, flightCodes, monthsNeeded, type PriceSource } from '../lib/prices';
+import { checkHelper, compareStartDates, fetchMonth, flightCodes, monthsNeeded, type PriceSource } from '../lib/prices';
 import { useSettings, setSettings } from '../lib/settings';
 import { OfferList } from './OfferList';
 import { FareCalendar } from './FareCalendar';
+import { AirportCompare } from './AirportCompare';
 
 const SOURCE_LABEL: Record<PriceSource, string> = {
   offer: 'jouw prijs', calendar: 'prijskalender', fixed: 'vaste prijs', estimate: 'schatting',
@@ -28,7 +29,7 @@ export function PricesTab({ trip }: { trip: Trip }) {
 
   return (
     <div className="prices">
-      <DateCompare trip={trip} hasToken={!!settings.travelpayoutsToken} />
+      <DateCompare trip={trip} hasSource={!!settings.travelpayoutsToken || !!settings.ryanairHelper} />
 
       <h3>Prijzen per traject</h3>
       {legs.map(({ s, i }) => {
@@ -54,6 +55,14 @@ export function PricesTab({ trip }: { trip: Trip }) {
               <div className="links">
                 {flex.map((l) => <a key={l.label} className="link-btn" href={l.url} target="_blank" rel="noreferrer" title={l.hint}>📅 {l.label} ↗</a>)}
               </div>
+            )}
+            {leg.mode === 'plane' && (
+              <AirportCompare trip={trip} index={i} planned={planned}
+                onAdd={(provider, pp, date, url, note) => setLeg(i, {
+                  offers: [...(leg.offers ?? []).filter((o) => !(o.provider === provider && o.date === date)), {
+                    id: uid(), provider, price: Math.round(pp * trip.travelers * 100) / 100, date, url, note, source: 'calendar', addedAt: Date.now(),
+                  }],
+                })} />
             )}
             {codes && settings.travelpayoutsToken && (
               <FareCalendar from={codes.from} to={codes.to} planned={planned} travelers={trip.travelers} currency={trip.currency}
@@ -124,7 +133,7 @@ function ShiftHint({ trip, legIndex, date }: { trip: Trip; legIndex: number; dat
   );
 }
 
-function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
+function DateCompare({ trip, hasSource }: { trip: Trip; hasSource: boolean }) {
   const base = parseDate(trip.startDate);
   const [from, setFrom] = useState(toISO(addDays(base, -7)));
   const [to, setTo] = useState(toISO(addDays(base, 14)));
@@ -147,7 +156,7 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
     setLoading(true); setMsg(null);
     let ok = 0;
     for (const n of needed) {
-      try { await fetchFlightMonth(n.from, n.to, n.month, trip.currency); ok++; } catch (e) { setMsg((e as Error).message); break; }
+      try { await fetchMonth(n, trip.currency); ok++; } catch (e) { setMsg((e as Error).message); break; }
     }
     setLoading(false);
     setTick((t) => t + 1);
@@ -156,9 +165,9 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
 
   // Automatisch ophalen als er een token is (resultaten worden 6 uur bewaard).
   useEffect(() => {
-    if (hasToken && needed.length) loadFares();
+    if (hasSource && needed.length) loadFares();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasToken, needed.map((n) => `${n.from}${n.to}${n.month}`).join()]);
+  }, [hasSource, needed.map((n) => `${n.source}${n.from}${n.to}${n.month}`).join()]);
 
   const rows = compareStartDates(trip, starts);
   if (!rows.length) return null;
@@ -180,7 +189,7 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
       <div className="row date-range">
         <label>Van<input type="date" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} /></label>
         <label>Tot<input type="date" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} /></label>
-        {hasToken && needed.length > 0 && (
+        {hasSource && needed.length > 0 && (
           <button type="button" className="btn ghost small" onClick={loadFares} disabled={loading}>{loading ? 'Ophalen…' : '↻ Vliegprijzen'}</button>
         )}
       </div>
@@ -189,7 +198,7 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
       {allEstimated ? (
         <p className="small">
           Nog geen prijzen per datum bekend, dus elke dag kost nu hetzelfde. Voeg hieronder prijzen toe die je bij aanbieders vindt
-          (met datum){needed.length > 0 && !hasToken && ', of stel een Travelpayouts-token in voor vliegprijzen'} — dan zie je hier welke dag het goedkoopst is.
+          (met datum){!hasSource && trip.stops.some((x) => x.leg?.mode === 'plane') && ', of zet bij Instellingen een prijsbron voor vluchten aan'} — dan zie je hier welke dag het goedkoopst is.
         </p>
       ) : (
         <>
@@ -206,6 +215,7 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
               const w = max > 0 ? (100 * r.total) / max : 0; // vanaf nul: eerlijke verhoudingen
               const isBest = r.total === min;
               const isCur = r.start === trip.startDate;
+              const guess = r.legs.some((l) => l.source === 'estimate');
               const d = parseDate(r.start);
               const tip = `${fmtDate(d)} → ${fmtDate(parseDate(r.end))}\nTotaal ${fmtMoney(r.total, trip.currency)}\n` +
                 r.legs.map((l, k) => `Traject ${k + 1}: ${fmtMoney(l.amount, trip.currency)} (${SOURCE_LABEL[l.source]})`).join('\n') +
@@ -214,13 +224,13 @@ function DateCompare({ trip, hasToken }: { trip: Trip; hasToken: boolean }) {
                 <button key={r.start} type="button" role="listitem" className={`date-bar${isCur ? ' current' : ''}`} title={tip}
                   onClick={() => updateTrip(trip.id, (t) => ({ ...t, startDate: r.start }))}>
                   <span className={`db-label${d.getDay() % 6 === 0 ? ' weekend' : ''}`}>{fmtDate(d)}</span>
-                  <span className="db-track"><span className={`db-fill${isBest ? ' best' : ''}`} style={{ width: `${w}%` }} /></span>
-                  <span className="db-value">{fmtMoney(r.total, trip.currency)}{isBest && ' ★'}</span>
+                  <span className="db-track"><span className={`db-fill${isBest ? ' best' : ''}${guess ? ' guess' : ''}`} style={{ width: `${w}%` }} /></span>
+                  <span className={`db-value${guess ? ' muted' : ''}`}>{guess && '~'}{fmtMoney(r.total, trip.currency)}{isBest && ' ★'}</span>
                 </button>
               );
             })}
           </div>
-          <p className="muted small">★ = goedkoopst. Klik een datum om je reis daarheen te verschuiven; beweeg erover voor de opbouw.
+          <p className="muted small">★ = goedkoopst. ~ = bevat een schatting (nog geen prijs voor die dag). Klik een datum om je reis daarheen te verschuiven; beweeg erover voor de opbouw.
             Trajecten zonder prijs voor die dag tellen mee als schatting of vaste prijs.</p>
         </>
       )}
@@ -247,6 +257,36 @@ function Settings() {
           onChange={(e) => setSettings({ priceProxyUrl: e.target.value.trim() || undefined })} />
       </label>
       <p className="muted small">Alleen nodig als de prijsdienst rechtstreeks vanuit de browser geblokkeerd wordt. Zie <code>proxy/README.md</code> in de repository.</p>
+      <HelperSettings />
     </details>
+  );
+}
+
+function HelperSettings() {
+  const s = useSettings();
+  const [status, setStatus] = useState<'unknown' | 'ok' | 'down'>('unknown');
+  useEffect(() => {
+    if (!s.ryanairHelper) return;
+    checkHelper().then((ok) => setStatus(ok ? 'ok' : 'down'));
+  }, [s.ryanairHelper, s.fareHelperUrl]);
+  return (
+    <div className="helper-settings">
+      <h4>Ryanair-prijzen via mijn computer</h4>
+      <p className="small">
+        Start op je computer de prijshulp met <code>node tools/fare-helper/server.mjs</code> (zie <code>tools/fare-helper/README.md</code>).
+        Werkt alleen in de browser op die computer. Alleen voor persoonlijk gebruik; Ryanairs voorwaarden staan automatisch ophalen niet toe.
+      </p>
+      <label className="check">
+        <input type="checkbox" checked={!!s.ryanairHelper} onChange={(e) => setSettings({ ryanairHelper: e.target.checked || undefined })} />
+        Prijshulp gebruiken
+        {s.ryanairHelper && <span className={`badge${status === 'ok' ? ' ok' : ''}`}>{status === 'ok' ? 'verbonden' : status === 'down' ? 'niet bereikbaar' : '…'}</span>}
+      </label>
+      {s.ryanairHelper && (
+        <label>Adres prijshulp
+          <input type="url" placeholder="http://localhost:8787" value={s.fareHelperUrl ?? ''}
+            onChange={(e) => setSettings({ fareHelperUrl: e.target.value.trim() || undefined })} />
+        </label>
+      )}
+    </div>
   );
 }

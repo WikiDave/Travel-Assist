@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchFlightMonth, PriceError, type MonthFares } from '../lib/prices';
+
+type Loader = (from: string, to: string, month: string) => Promise<MonthFares>;
 import { fmtMoney, toISO } from '../lib/estimate';
 
 interface Props {
@@ -10,12 +12,15 @@ interface Props {
   travelers: number;
   currency: string;
   onPick: (date: string, pricePerPerson: number, airline?: string, link?: string) => void;
+  /** Prijsbron; standaard de Travelpayouts-kalender */
+  load?: Loader;
+  source?: string;
 }
 
 const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
 
 /** Maandkalender met de laagste vliegprijs per dag. Donkerder = duurder. */
-export function FareCalendar({ from, to, planned, travelers, currency, onPick }: Props) {
+export function FareCalendar({ from, to, planned, travelers, currency, onPick, load, source = 'recente zoekopdrachten' }: Props) {
   const [month, setMonth] = useState(planned.slice(0, 7));
   const [fares, setFares] = useState<MonthFares | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,11 +29,12 @@ export function FareCalendar({ from, to, planned, travelers, currency, onPick }:
   useEffect(() => {
     let alive = true;
     setLoading(true); setError(null);
-    fetchFlightMonth(from, to, month, currency)
+    (load ? load(from, to, month) : fetchFlightMonth(from, to, month, currency))
       .then((f) => alive && setFares(f))
       .catch((e) => alive && setError(e instanceof PriceError ? e.message : 'Ophalen mislukt'))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to, month, currency]);
 
   const [y, m] = month.split('-').map(Number);
@@ -74,7 +80,7 @@ export function FareCalendar({ from, to, planned, travelers, currency, onPick }:
       {prices.length > 0 && (
         <p className="muted small">
           Laagste prijs deze maand: <strong>{fmtMoney(min, currency)}</strong> p.p. ({fmtMoney(min * travelers, currency)} totaal).
-          Prijzen per persoon, enkele reis, uit recente zoekopdrachten — controleer bij boeken. Klik op een dag om hem toe te voegen.
+          Prijzen per persoon, enkele reis, bron: {source} — controleer bij boeken. Klik op een dag om hem toe te voegen.
         </p>
       )}
       {fares && !prices.length && !loading && <p className="muted small">Geen prijzen bekend voor deze maand.</p>}

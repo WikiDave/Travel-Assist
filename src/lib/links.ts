@@ -137,3 +137,13 @@ export function flexLinks(mode: ModeId, a: Place, b: Place, date: Date, traveler
   if (mode === 'bus') return [{ label: 'FlixBus – prijskalender', url: 'https://www.flixbus.nl/', hint: 'De zoekresultaten tonen prijzen van omliggende dagen' }];
   return [];
 }
+
+/** Directe zoeklinks bij prijsvliegers voor één luchthavencombinatie. */
+export function airlineLinks(from: string, to: string, date: Date, travelers: number): ProviderLink[] {
+  const day = toISO(date);
+  return [
+    { label: 'Ryanair', url: `https://www.ryanair.com/nl/nl/trip/flights/select?adults=${travelers}&teens=0&children=0&infants=0&dateOut=${day}&isReturn=false&originIata=${from}&destinationIata=${to}` },
+    { label: 'Wizz Air', url: `https://wizzair.com/nl-nl/booking/select-flight/${from}/${to}/${day}/null/${travelers}/0/0/null` },
+    { label: 'Skyscanner', url: `https://www.skyscanner.nl/transport/vluchten/${from.toLowerCase()}/${to.toLowerCase()}/${toISO(date).slice(2).replace(/-/g, '')}/?adults=${travelers}` },
+  ];
+}
