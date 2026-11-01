@@ -62,6 +62,12 @@ export function PricesTab({ trip }: { trip: Trip }) {
                   offers: [...(leg.offers ?? []).filter((o) => !(o.provider === provider && o.date === date)), {
                     id: uid(), provider, price: Math.round(pp * trip.travelers * 100) / 100, date, url, note, source: 'calendar', addedAt: Date.now(),
                   }],
+                })}
+                onCapture={(provider, total, date, url, screenshotIds, time) => setLeg(i, {
+                  offers: [...(leg.offers ?? []), {
+                    id: uid(), provider, price: total, date, time, url, screenshotIds, source: 'manual',
+                    note: 'met screenshot', addedAt: Date.now(),
+                  }],
                 })} />
             )}
             {codes && settings.travelpayoutsToken && (

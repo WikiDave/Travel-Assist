@@ -5,6 +5,7 @@ import { airlineLinks } from '../lib/links';
 import { useSettings } from '../lib/settings';
 import { fmtDate, fmtMoney, parseDate } from '../lib/estimate';
 import { FareCalendar } from './FareCalendar';
+import { CapturePanel } from './CapturePanel';
 
 interface Props {
   trip: Trip;
@@ -12,6 +13,8 @@ interface Props {
   /** Geplande vertrekdatum (YYYY-MM-DD) */
   planned: string;
   onAdd: (provider: string, pricePerPerson: number, date: string, url: string, note: string) => void;
+  /** Prijs met eigen screenshot vastleggen (totaalprijs voor alle reizigers) */
+  onCapture: (provider: string, total: number, date: string, url: string, screenshotIds: string[], time?: string) => void;
 }
 
 /**
@@ -19,12 +22,13 @@ interface Props {
  * met directe links naar Ryanair, Wizz Air en Skyscanner en — als de lokale prijshulp
  * aanstaat — de Ryanair-prijs op de geplande dag en de goedkoopste dag van de maand.
  */
-export function AirportCompare({ trip, index, planned, onAdd }: Props) {
+export function AirportCompare({ trip, index, planned, onAdd, onCapture }: Props) {
   const { ryanairHelper } = useSettings();
   const pairs = airportPairs(trip, index);
   const [fares, setFares] = useState<Record<string, MonthFares | 'error'>>({});
   const [error, setError] = useState<string | null>(null);
   const [calendar, setCalendar] = useState<string | null>(null);
+  const [capture, setCapture] = useState<{ key: string; label: string; url: string; time?: string } | null>(null);
   const month = planned.slice(0, 7);
   const pairKey = pairs.map((p) => `${p.from.iata}${p.to.iata}`).join();
 
@@ -77,7 +81,16 @@ export function AirportCompare({ trip, index, planned, onAdd }: Props) {
                 </div>
                 <div className="links compact">
                   {airlineLinks(p.from.iata, p.to.iata, date, trip.travelers).map((l) => (
-                    <a key={l.label} className="link-btn" href={l.url} target="_blank" rel="noreferrer">{l.label} ↗</a>
+                    <span key={l.label} className="link-pair">
+                      <a className="link-btn" href={l.url} target="_blank" rel="noreferrer">{l.label} ↗</a>
+                      {l.label !== 'Skyscanner' && (
+                        <button type="button" className="link-btn capture-btn" title={`Open ${l.label} en leg de prijs vast met een screenshot`}
+                          onClick={() => {
+                            window.open(l.url, '_blank', 'noopener');
+                            setCapture({ key: `${k}-${l.label}`, label: `${l.label} ${p.from.iata}→${p.to.iata}`, url: l.url, time: onDay?.departureAt?.slice(11, 16) });
+                          }}>📸</button>
+                      )}
+                    </span>
                   ))}
                 </div>
               </td>
@@ -111,6 +124,11 @@ export function AirportCompare({ trip, index, planned, onAdd }: Props) {
           ))}
         </tbody>
       </table>
+      {capture && (
+        <CapturePanel key={capture.key} title={`${capture.label} · ${fmtDate(date)}`} url={capture.url} defaultTime={capture.time}
+          onCancel={() => setCapture(null)}
+          onSave={(total, ids, time) => { onCapture(capture.label, total, planned, capture.url, ids, time); setCapture(null); }} />
+      )}
       {calendar && (() => {
         const p = pairs.find((x) => `${x.from.iata}-${x.to.iata}` === calendar)!;
         return (

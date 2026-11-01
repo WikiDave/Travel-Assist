@@ -4,7 +4,7 @@ import { uid } from './store';
 const key = (id: string) => `photo:${id}`;
 
 /** Verkleint een foto en bewaart hem in IndexedDB. Geeft het foto-id terug. */
-export async function savePhoto(file: File, maxSize = 1600): Promise<string> {
+export async function savePhoto(file: Blob, maxSize = 1600): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
@@ -35,4 +35,12 @@ export async function deletePhoto(id: string) {
   const url = urlCache.get(id);
   if (url) URL.revokeObjectURL(url);
   urlCache.delete(id);
+}
+
+/** Haalt een afbeelding uit een plak-actie (Ctrl+V na een screenshot). */
+export function imageFromClipboard(e: React.ClipboardEvent | ClipboardEvent): File | null {
+  for (const item of Array.from(e.clipboardData?.items ?? [])) {
+    if (item.type.startsWith('image/')) return item.getAsFile();
+  }
+  return null;
 }

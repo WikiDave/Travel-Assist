@@ -30,6 +30,8 @@ export interface Offer {
   url?: string;
   source: 'manual' | 'calendar';
   addedAt: number;
+  /** Eigen screenshots van de aanbieder als bewijs van de prijs (foto-id's in IndexedDB) */
+  screenshotIds?: string[];
 }
 
 /** Het traject om bij deze stop aan te komen (vanaf de vorige stop). */

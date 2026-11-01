@@ -2,6 +2,8 @@ import { useId, useState } from 'react';
 import type { Offer } from '../types';
 import { fmtDate, fmtMoney, parseDate } from '../lib/estimate';
 import { uid } from '../lib/store';
+import { deletePhoto, savePhoto } from '../lib/photos';
+import { ScreenshotThumbs } from './Screenshots';
 
 interface Props {
   offers: Offer[];
@@ -24,6 +26,16 @@ export function OfferList({ offers, chosenId, currency, defaultDate, plannedDate
   const [note, setNote] = useState('');
   const listId = useId();
 
+  const attach = async (offerId: string, file: File | undefined) => {
+    if (!file) return;
+    const shot = await savePhoto(file, 2000);
+    onChange(offers.map((o) => (o.id === offerId ? { ...o, screenshotIds: [...(o.screenshotIds ?? []), shot] } : o)));
+  };
+  const detach = (offerId: string, shot: string) => {
+    deletePhoto(shot);
+    onChange(offers.map((o) => (o.id === offerId ? { ...o, screenshotIds: o.screenshotIds?.filter((x) => x !== shot) } : o)));
+  };
+
   const sorted = [...offers].sort((a, b) => a.price - b.price);
   const cheapest = sorted[0];
 
@@ -39,6 +51,7 @@ export function OfferList({ offers, chosenId, currency, defaultDate, plannedDate
   };
 
   const remove = (id: string) => {
+    offers.find((o) => o.id === id)?.screenshotIds?.forEach(deletePhoto);
     onChange(offers.filter((o) => o.id !== id));
     if (id === chosenId) onChoose(undefined);
   };
@@ -59,12 +72,16 @@ export function OfferList({ offers, chosenId, currency, defaultDate, plannedDate
                     {o.date && plannedDate && o.date !== plannedDate && ' · ⚠️ andere dag dan gepland'}
                     {o.note && ` · ${o.note}`}
                   </div>
+                  <ScreenshotThumbs ids={o.screenshotIds ?? []} onRemove={(shot) => detach(o.id, shot)} />
                 </td>
                 <td className="num"><strong>{fmtMoney(o.price, currency)}</strong>
                   {o !== cheapest && cheapest && <div className="muted small">+{fmtMoney(o.price - cheapest.price, currency)}</div>}
                 </td>
                 <td className="offer-actions">
                   {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="icon-btn" title="Openen">↗</a>}
+                  <label className="icon-btn" title="Screenshot toevoegen">📷
+                    <input type="file" accept="image/*" hidden onChange={(e) => { attach(o.id, e.target.files?.[0]); e.target.value = ''; }} />
+                  </label>
                   {o.id === chosenId
                     ? <button type="button" className="btn small" onClick={() => onChoose(undefined)}>✓ Gekozen</button>
                     : <button type="button" className="btn ghost small" onClick={() => onChoose(o)}>Kies</button>}
