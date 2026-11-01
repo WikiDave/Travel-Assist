@@ -70,3 +70,18 @@ describe('links', () => {
   });
 });
 
+
+import { splitRoute } from '../geo';
+describe('dagberekening fiets/hike', () => {
+  it('een fietsrit van één dag komt dezelfde dag aan', () => {
+    const e = estimateLeg('bike', ams, utrecht, 1);
+    expect(e.days).toBe(1);
+    expect(e.dayOffset).toBe(0);
+  });
+  it('splitst een route in gelijke etappes', () => {
+    const pts = splitRoute([[52, 4], [52, 5], [52, 6]], 4);
+    expect(pts).toHaveLength(3);
+    expect(pts[1].lon).toBeCloseTo(5, 1);
+    expect(pts[0].lon).toBeCloseTo(4.5, 1);
+  });
+});

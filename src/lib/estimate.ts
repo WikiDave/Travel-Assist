@@ -7,8 +7,10 @@ export interface LegEstimate {
   distanceKm: number;
   /** Reistijd in uren (inclusief overhead) */
   durationH: number;
-  /** Aantal reisdagen (fiets/hike meerdaags, slaaptrein = 1 nacht) */
+  /** Aantal reisdagen (fiets/hike: aantal etappes; anders 0 of 1) */
   days: number;
+  /** Hoeveel kalenderdagen later je aankomt dan je vertrekt */
+  dayOffset: number;
   /** Totale CO2 in kg voor de hele groep */
   co2Kg: number;
   /** Geschatte kosten voor de hele groep (EUR) */
@@ -29,6 +31,8 @@ export function estimateLeg(mode: ModeId, from: Place, to: Place, travelers: num
   if (m.kmPerDay) days = Math.max(1, Math.ceil(distanceKm / m.kmPerDay));
   else if (m.overnight) days = 1;
   else if (durationH > 14) days = 1;
+  // Een fietstocht van 3 etappes die op dag X begint, eindigt op dag X+2.
+  const dayOffset = m.kmPerDay ? days - 1 : days;
 
   const cars = Math.ceil(people / 5);
   const co2Kg = m.perVehicle ? distanceKm * m.co2PerKm * cars : distanceKm * m.co2PerKm * people;
@@ -41,7 +45,7 @@ export function estimateLeg(mode: ModeId, from: Place, to: Place, travelers: num
   if (straight < m.minKm) { feasible = false; reason = 'Te kort voor deze vervoerswijze'; }
   else if (straight > m.maxKm) { feasible = false; reason = 'Te ver voor deze vervoerswijze'; }
 
-  return { mode, distanceKm, durationH, days, co2Kg, cost, feasible, reason, source: route?.source ?? 'estimate' };
+  return { mode, distanceKm, durationH, days, dayOffset, co2Kg, cost, feasible, reason, source: route?.source ?? 'estimate' };
 }
 
 export interface ItineraryDay {
@@ -71,7 +75,7 @@ export function legDays(trip: Trip, i: number): number {
   const stop = trip.stops[i];
   if (i === 0 || !stop.leg) return 0;
   const prev = trip.stops[i - 1];
-  return estimateLeg(stop.leg.mode, prev.place, stop.place, trip.travelers, legRoute(trip, i)).days;
+  return estimateLeg(stop.leg.mode, prev.place, stop.place, trip.travelers, legRoute(trip, i)).dayOffset;
 }
 
 export function routeKey(mode: ModeId, a: Place, b: Place): string {

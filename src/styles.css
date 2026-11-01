@@ -178,3 +178,21 @@ details summary { cursor: pointer; color: var(--brand); margin: 6px 0; }
   .trip-body { display: block; }
   .panel { overflow: visible; }
 }
+
+/* Fijnafstelling planner */
+.drag-handle { color: #cbd5e1; cursor: grab; user-select: none; font-size: 0.9rem; letter-spacing: -2px; }
+.stops li.dragging { opacity: 0.4; }
+.stops li.drop-target .stop { outline: 2px dashed var(--brand-2); }
+.insert-btn { display: block; margin: 4px 0 0 22px; background: none; border: none; color: var(--muted); font-size: 0.78rem; padding: 2px 6px; border-radius: 6px; opacity: 0.55; }
+.insert-btn:hover, .insert-btn:focus { opacity: 1; color: var(--brand); background: #f0fdfa; }
+.insert-box { margin: 6px 0 6px 15px; padding: 8px; background: #fff; border: 2px dashed var(--brand-2); border-radius: var(--radius); }
+.stop-menu .menu-items { min-width: 200px; }
+.stop-menu summary { list-style: none; font-size: 1.1rem; }
+.stop-menu summary::-webkit-details-marker { display: none; }
+.menu-items button:disabled { opacity: 0.35; }
+.stop-main .row { flex: 1; }
+.stop-main .place-search { flex: 1; }
+.add-expense { display: grid; grid-template-columns: 1fr 1fr; }
+.add-expense select, .add-expense input { max-width: none !important; }
+.add-expense input:nth-of-type(1) { grid-column: 1 / -1; }
+@media (hover: none) { .drag-handle { display: none; } .insert-btn { opacity: 0.8; } }

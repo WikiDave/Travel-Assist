@@ -22,22 +22,24 @@ const TABS: { id: Tab; label: string; icon: string; mobileOnly?: boolean }[] = [
   { id: 'paklijst', label: 'Paklijst', icon: '🎒' },
 ];
 
-/** Haalt echte routes op (auto/fiets/lopen) voor trajecten waarvan de route verouderd is. */
-function useRouteSync(trip: Trip) {
-  const [busy, setBusy] = useState<Set<number>>(new Set());
+/** Haalt echte routes op (auto/fiets/lopen) voor trajecten waarvan de route verouderd is. Geeft de stop-id's terug die bezig zijn. */
+function useRouteSync(trip: Trip): Set<string> {
+  const [busy, setBusy] = useState<Set<string>>(new Set());
   const inflight = useRef(new Set<string>());
+  const failed = useRef(new Set<string>());
 
   useEffect(() => {
     trip.stops.forEach((s, i) => {
       if (i === 0 || !s.leg || !MODES[s.leg.mode].osrmProfile) return;
       const prev = trip.stops[i - 1];
       const key = routeKey(s.leg.mode, prev.place, s.place);
-      if (s.leg.routeKey === key || inflight.current.has(key)) return;
+      if (s.leg.routeKey === key || inflight.current.has(key) || failed.current.has(key)) return;
       inflight.current.add(key);
-      setBusy((b) => new Set(b).add(i));
+      setBusy((b) => new Set(b).add(s.id));
       computeRoute(s.leg.mode, prev.place, s.place)
         .then((route) => {
-          if (route.source !== 'osrm') return; // mislukt: schatting gebruiken, later opnieuw proberen
+          // Mislukt (geen route, server onbereikbaar): schatting blijven gebruiken, niet steeds opnieuw proberen.
+          if (route.source !== 'osrm') { failed.current.add(key); return; }
           updateTrip(trip.id, (t) => ({
             ...t,
             stops: t.stops.map((x) => (x.id === s.id && x.leg ? { ...x, leg: { ...x.leg, route, routeKey: key } } : x)),
@@ -45,7 +47,7 @@ function useRouteSync(trip: Trip) {
         })
         .finally(() => {
           inflight.current.delete(key);
-          setBusy((b) => { const n = new Set(b); n.delete(i); return n; });
+          setBusy((b) => { const n = new Set(b); n.delete(s.id); return n; });
         });
     });
   }, [trip]);
@@ -96,7 +98,7 @@ export function TripView({ trip, onBack }: { trip: Trip; onBack: () => void }) {
 
       <div className={`trip-body tab-${tab}`}>
         <main className="panel">
-          {tab === 'route' && <PlanTab trip={trip} routingIndex={routing} onFocus={(i) => { setFocus(i); }} />}
+          {tab === 'route' && <PlanTab trip={trip} routingIds={routing} onFocus={(i) => { setFocus(i); }} />}
           {tab === 'verblijf' && <StaysTab trip={trip} />}
           {tab === 'dagboek' && <JournalTab trip={trip} />}
           {tab === 'budget' && <BudgetTab trip={trip} />}

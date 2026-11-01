@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import type { ModeId, RouteGeometry, Trip } from '../types';
 import { MODE_LIST, MODES } from '../lib/modes';
 import { computeRoute } from '../lib/geo';
-import { estimateLeg, fmtDuration, fmtKm, fmtMoney, legEstimate, type LegEstimate } from '../lib/estimate';
+import { estimateLeg, fmtDate, fmtDuration, fmtKm, fmtMoney, legEstimate, type LegEstimate } from '../lib/estimate';
 import { transportLinks } from '../lib/links';
 import { download, tripToGpx } from '../lib/gpx';
 import { updateTrip } from '../lib/store';
+import { splitIntoStages } from '../lib/plan';
 
 interface Props {
   trip: Trip;
@@ -22,6 +23,16 @@ export function LegCard({ trip, index, departDate, routing }: Props) {
   const est = legEstimate(trip, index)!;
   const [open, setOpen] = useState(false);
   const [compare, setCompare] = useState(false);
+  const [splitting, setSplitting] = useState<string | null>(null);
+
+  const split = async () => {
+    setSplitting('Etappeplaatsen zoeken…');
+    try {
+      await splitIntoStages(trip, index, est.days, (d, n) => setSplitting(`Etappeplaatsen zoeken… ${d}/${n}`));
+    } finally {
+      setSplitting(null);
+    }
+  };
 
   const patch = (p: Partial<typeof leg>) =>
     updateTrip(trip.id, (t) => ({
@@ -36,7 +47,7 @@ export function LegCard({ trip, index, departDate, routing }: Props) {
       <div className="leg-head" onClick={() => setOpen(!open)}>
         <span className="leg-icon" style={{ background: mode.color }}>{mode.icon}</span>
         <div className="leg-summary">
-          <strong>{mode.label}</strong>
+          <strong>{mode.label} <span className="muted small">· {fmtDate(departDate)}{leg.departTime && ` ${leg.departTime}`}</span></strong>
           <span className="muted small">
             {fmtKm(est.distanceKm)} · {est.days > 1 && mode.kmPerDay ? `${est.days} dagen` : fmtDuration(est.durationH)}
             {' · '}{est.co2Kg < 1 ? '0' : Math.round(est.co2Kg)} kg CO₂
@@ -71,8 +82,12 @@ export function LegCard({ trip, index, departDate, routing }: Props) {
           {mode.kmPerDay && est.days > 1 && (
             <p className="small">
               {mode.icon} Ongeveer <strong>{est.days} etappes</strong> van ~{Math.round(est.distanceKm / est.days)} km.
-              Plan overnachtingen onderweg door tussenstops toe te voegen.
             </p>
+          )}
+          {mode.kmPerDay && est.days > 1 && (
+            <button type="button" className="btn small" onClick={split} disabled={!!splitting || routing}>
+              {splitting ?? `🏕️ Opdelen in ${est.days} dagetappes met overnachtingen`}
+            </button>
           )}
           {mode.overnight && <p className="small">🛏️ Je slaapt in de trein: dat scheelt een hotelnacht en je komt de volgende ochtend aan.</p>}
 

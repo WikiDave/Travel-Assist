@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChecklistItem, ModeId, Trip } from '../types';
+import type { ChecklistItem, ModeId, Place, Stop, Trip } from '../types';
 import { toISO } from './estimate';
 
 const KEY = 'travel-assist:trips:v1';
@@ -87,4 +87,13 @@ export function suggestedChecklistItems(trip: Trip): string[] {
   const modes = [...new Set(trip.stops.map((s) => s.leg?.mode).filter(Boolean) as ModeId[])];
   const have = new Set(trip.checklist.map((c) => c.label));
   return [...new Set(modes.flatMap((m) => BY_MODE[m] ?? []))].filter((l) => !have.has(l));
+}
+
+/** Zorgt dat de eerste stop geen traject/nachten heeft en de rest wel een traject. */
+export function normalizeStops(stops: Stop[], defaultMode: (a: Place, b: Place) => ModeId): Stop[] {
+  return stops.map((s, i) => {
+    if (i === 0) return s.leg || s.nights ? { ...s, leg: undefined, nights: 0 } : s;
+    if (!s.leg) return { ...s, leg: { mode: defaultMode(stops[i - 1].place, s.place), booked: false }, nights: s.nights || 1 };
+    return s;
+  });
 }

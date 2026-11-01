@@ -131,3 +131,27 @@ export function computeRoute(mode: ModeId, a: Place, b: Place): Promise<RouteGeo
   }
   return p;
 }
+
+/** Punten op gelijke afstand langs een route, voor het opdelen in n etappes (n-1 tussenpunten). */
+export function splitRoute(coords: [number, number][], n: number): { lat: number; lon: number }[] {
+  if (n < 2 || coords.length < 2) return [];
+  const seg: number[] = [];
+  let total = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const d = haversineKm({ lat: coords[i - 1][0], lon: coords[i - 1][1] }, { lat: coords[i][0], lon: coords[i][1] });
+    seg.push(d);
+    total += d;
+  }
+  const out: { lat: number; lon: number }[] = [];
+  let k = 1, acc = 0;
+  for (let i = 0; i < seg.length && k < n; i++) {
+    while (k < n && acc + seg[i] >= (total * k) / n) {
+      const f = seg[i] ? ((total * k) / n - acc) / seg[i] : 0;
+      const [aLat, aLon] = coords[i], [bLat, bLon] = coords[i + 1];
+      out.push({ lat: aLat + (bLat - aLat) * f, lon: aLon + (bLon - aLon) * f });
+      k++;
+    }
+    acc += seg[i];
+  }
+  return out;
+}
