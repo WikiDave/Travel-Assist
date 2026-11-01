@@ -24,6 +24,12 @@ npm test         # unit tests
 npm run build    # productiebuild in dist/ (statisch te hosten, bv. GitHub Pages / Netlify)
 ```
 
+## Online (GitHub Pages)
+
+De app staat op **https://wikidave.github.io/Travel-Assist/**. Elke push naar `master` wordt automatisch gebouwd, getest en gepubliceerd via `.github/workflows/deploy.yml`.
+
+Eenmalig instellen: *Settings → Pages → Build and deployment → Source: **GitHub Actions***.
+
 ## Techniek
 
 - React 19 + TypeScript + Vite, geen backend: alle data blijft op je eigen apparaat (localStorage + IndexedDB).
