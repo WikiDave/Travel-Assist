@@ -6,16 +6,18 @@ import { StaysTab } from './StaysTab';
 import { JournalTab } from './JournalTab';
 import { BudgetTab } from './BudgetTab';
 import { ChecklistTab } from './ChecklistTab';
+import { PricesTab } from './PricesTab';
 import { deleteTrip, updateTrip } from '../lib/store';
 import { computeRoute } from '../lib/geo';
 import { MODES } from '../lib/modes';
 import { routeKey } from '../lib/estimate';
 import { download, tripToGpx } from '../lib/gpx';
 
-type Tab = 'route' | 'kaart' | 'verblijf' | 'dagboek' | 'budget' | 'paklijst';
+type Tab = 'route' | 'kaart' | 'prijzen' | 'verblijf' | 'dagboek' | 'budget' | 'paklijst';
 const TABS: { id: Tab; label: string; icon: string; mobileOnly?: boolean }[] = [
   { id: 'route', label: 'Route', icon: '🧭' },
   { id: 'kaart', label: 'Kaart', icon: '🗺️', mobileOnly: true },
+  { id: 'prijzen', label: 'Prijzen', icon: '🏷️' },
   { id: 'verblijf', label: 'Verblijf', icon: '🏨' },
   { id: 'dagboek', label: 'Dagboek', icon: '📔' },
   { id: 'budget', label: 'Budget', icon: '💶' },
@@ -99,6 +101,7 @@ export function TripView({ trip, onBack }: { trip: Trip; onBack: () => void }) {
       <div className={`trip-body tab-${tab}`}>
         <main className="panel">
           {tab === 'route' && <PlanTab trip={trip} routingIds={routing} onFocus={(i) => { setFocus(i); }} />}
+          {tab === 'prijzen' && <PricesTab trip={trip} />}
           {tab === 'verblijf' && <StaysTab trip={trip} />}
           {tab === 'dagboek' && <JournalTab trip={trip} />}
           {tab === 'budget' && <BudgetTab trip={trip} />}

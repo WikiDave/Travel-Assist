@@ -112,3 +112,28 @@ export function exploreLinks(p: Place): ProviderLink[] {
     { label: 'Weer', url: `https://www.yr.no/nb/v%C3%A6rvarsel/daglig-tabell/${p.lat.toFixed(3)},${p.lon.toFixed(3)}` },
   ];
 }
+
+/** Zoeklinks met flexibele datums: hele maand of goedkoopste dag tonen. */
+export function flexLinks(mode: ModeId, a: Place, b: Place, date: Date, travelers: number): ProviderLink[] {
+  const ym = toISO(date).slice(2, 7).replace('-', '');
+  const monthName = date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+  if (mode === 'plane') {
+    const fa = nearestAirport(a), fb = nearestAirport(b);
+    const out: ProviderLink[] = [];
+    if (fa && fb) out.push({
+      label: `Skyscanner – hele ${monthName}`,
+      url: `https://www.skyscanner.nl/transport/vluchten/${fa.iata.toLowerCase()}/${fb.iata.toLowerCase()}/?adultsv2=${travelers}&oym=${ym}`,
+      hint: 'Toont de prijs per dag voor de hele maand',
+    });
+    out.push({ label: 'Google Flights – datumraster', url: `https://www.google.com/travel/flights?q=${enc(`vluchten van ${a.name} naar ${b.name} in ${monthName}`)}&hl=nl`, hint: 'Klik daarna op "Datumraster" of "Prijsgrafiek"' });
+    return out;
+  }
+  if (mode === 'train' || mode === 'nighttrain') {
+    return [
+      { label: 'DB – Bestpreissuche', url: 'https://int.bahn.de/nl', hint: 'Zet bij het zoeken "Bestprijs zoeken" aan: toont de goedkoopste trein per dagdeel' },
+      { label: 'Trainline – goedkoopste tickets', url: 'https://www.thetrainline.com/nl' },
+    ];
+  }
+  if (mode === 'bus') return [{ label: 'FlixBus – prijskalender', url: 'https://www.flixbus.nl/', hint: 'De zoekresultaten tonen prijzen van omliggende dagen' }];
+  return [];
+}

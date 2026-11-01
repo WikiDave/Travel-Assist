@@ -7,6 +7,7 @@ Eén alles-in-één reisplanner die meerdere apps vervangt:
 | **Route plannen met elke vervoerswijze** – vliegtuig ✈️, trein 🚆, slaaptrein 🛏️, bus 🚌, auto 🚗, fiets 🚲, wandelen/hike 🥾 en veerboot ⛴️ | Roadie / Roadtrippers, Rome2Rio | Stops toevoegen, per traject een vervoerswijze kiezen. Auto, fiets en lopen krijgen een échte route (OpenStreetMap/OSRM). |
 | **Vervoer vergelijken** – reistijd, afstand, CO₂ en kosten naast elkaar, met labels *snelst / goedkoopst / groenst* | Skyscanner, Omio | Schattingsmodel per vervoerswijze + echte routes. |
 | **Zoeken & boeken** | Skyscanner, Booking.com, Airbnb, FlixBus, Nightjet… | Directe links met ingevulde datum, bestemming en reizigers (Skyscanner met dichtstbijzijnde luchthaven, Booking.com met check-in/out, enz.). |
+| **Prijzen & datums vergelijken** – de totale reisprijs per vertrekdatum (goedkoopste dag ★), prijzen die je bij aanbieders vindt per traject en verblijf bijhouden en de beste kiezen, vliegprijskalender per maand | Skyscanner (maandoverzicht), Google Flights (datumraster) | Vliegprijzen via de gratis Travelpayouts Data API (eigen token, zie Prijzen → Instellingen); overige prijzen voeg je zelf toe vanuit de links met flexibele datums. |
 | **Verblijf** per stop met boekingsstatus, kosten en referentie | Booking.com / TripIt | Check-in/out-data worden automatisch berekend uit je reisschema. |
 | **Reisdagboek** met verhalen en foto's per stop, tijdlijn en statistieken (landen, km) | Polarsteps | Foto's worden verkleind en lokaal opgeslagen (IndexedDB). |
 | **Budget** – automatisch uit trajecten en verblijven + eigen uitgaven | Spreadsheets | Schattingen worden vervangen door echte prijzen zodra je boekt. |
@@ -39,6 +40,7 @@ Eenmalig instellen: *Settings → Pages → Build and deployment → Source: **G
 
 ## Beperkingen & volgende stappen
 
-- **Prijzen en reistijden voor vliegen, trein, bus en boot zijn schattingen.** Echte live prijzen en dienstregelingen vereisen API-sleutels/partnerschappen (bijv. Amadeus of Duffel voor vluchten, Booking.com Affiliate API, Trainline/Omio-partners). Dit vraagt een kleine backend om sleutels geheim te houden.
+- **De vliegprijskalender toont prijzen uit recente zoekopdrachten (cache), geen live boekbare prijzen.** Mocht de API browserverzoeken blokkeren, zie `proxy/README.md`.
+- **Prijzen en reistijden zonder ingevoerde prijs zijn schattingen.** Echte live prijzen en dienstregelingen vereisen API-sleutels/partnerschappen (Amadeus Self-Service is per juli 2026 gestopt; alternatieven zijn o.a. Duffel en Ignav voor vluchten, Booking.com Affiliate API, Trainline/Omio-partners). Dit vraagt een kleine backend om sleutels geheim te houden.
 - Gratis publieke diensten (Nominatim, OSRM) hebben gebruikslimieten; voor veel gebruikers is een eigen instantie of betaalde variant nodig.
 - Ideeën: automatische locatietracking zoals Polarsteps, delen van een reis met medereizigers (sync), weersverwachting per stop, offline kaarten, inchecken op boardingpasses/tickets via e-mail-import.

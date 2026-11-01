@@ -17,6 +17,21 @@ export interface RouteGeometry {
   source: 'osrm' | 'estimate';
 }
 
+/** Een prijs die je bij een aanbieder hebt gevonden (of uit de prijskalender). */
+export interface Offer {
+  id: string;
+  provider: string;
+  /** Totaalprijs voor alle reizigers */
+  price: number;
+  /** Datum (YYYY-MM-DD) waarop deze prijs geldt */
+  date?: string;
+  time?: string;
+  note?: string;
+  url?: string;
+  source: 'manual' | 'calendar';
+  addedAt: number;
+}
+
 /** Het traject om bij deze stop aan te komen (vanaf de vorige stop). */
 export interface Leg {
   mode: ModeId;
@@ -30,6 +45,9 @@ export interface Leg {
   route?: RouteGeometry;
   /** Sleutel (modus + coördinaten) waarvoor `route` berekend is */
   routeKey?: string;
+  /** Gevonden prijzen om te vergelijken */
+  offers?: Offer[];
+  chosenOfferId?: string;
 }
 
 export interface Stay {
@@ -40,6 +58,8 @@ export interface Stay {
   address?: string;
   reference?: string;
   link?: string;
+  offers?: Offer[];
+  chosenOfferId?: string;
 }
 
 export interface JournalEntry {

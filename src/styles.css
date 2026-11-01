@@ -196,3 +196,42 @@ details summary { cursor: pointer; color: var(--brand); margin: 6px 0; }
 .add-expense select, .add-expense input { max-width: none !important; }
 .add-expense input:nth-of-type(1) { grid-column: 1 / -1; }
 @media (hover: none) { .drag-handle { display: none; } .insert-btn { opacity: 0.8; } }
+
+/* Prijzen */
+.prices h3 { margin-top: 18px; }
+.offer-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 6px 0; }
+.offer-table td { padding: 7px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.offer-table tr.chosen { background: #f0fdf4; }
+.offer-actions { white-space: nowrap; text-align: right; }
+.offer-actions .btn { margin: 0 4px 0 0; }
+.offer-actions a.icon-btn { text-decoration: none; }
+.offer-form { display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.8fr; gap: 6px; margin-top: 8px; }
+.offer-form .wide { grid-column: 1 / -2; }
+.offer-form input { padding: 6px 8px; font-size: 0.85rem; }
+@media (max-width: 600px) { .offer-form { grid-template-columns: 1fr 1fr; } .offer-form .wide { grid-column: 1 / -1; } }
+.date-range { flex-wrap: wrap; align-items: flex-end; }
+.date-range label { flex: 1; min-width: 130px; }
+.hero-number { display: flex; flex-direction: column; gap: 2px; background: #f0fdfa; border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.hero-number strong { font-size: 1.4rem; }
+.hero-number .btn { align-self: flex-start; margin-top: 6px; }
+.date-bars { display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow-y: auto; margin: 6px 0; }
+.date-bar { display: grid; grid-template-columns: 96px 1fr 84px; gap: 8px; align-items: center; background: none; border: none; padding: 3px 4px; border-radius: 6px; text-align: left; font-size: 0.82rem; color: var(--text); }
+.date-bar:hover { background: #f1f5f9; }
+.date-bar.current { background: #f0fdfa; outline: 1px solid var(--brand-2); }
+.db-label.weekend { font-weight: 600; }
+.db-track { height: 10px; position: relative; }
+.db-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #99f6e4; border-radius: 0 4px 4px 0; }
+.db-fill.best { background: var(--brand); }
+.db-value { text-align: right; font-variant-numeric: tabular-nums; }
+.fare-cal { margin: 8px 0; }
+.fare-cal-head { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+.fare-cal-head .icon-btn { font-size: 1.3rem; }
+.fare-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.fare-wd { font-size: 0.7rem; color: var(--muted); text-align: center; }
+.fare-day { aspect-ratio: 1.15; border: 2px solid transparent; border-radius: 6px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; color: var(--text); }
+.fare-day:disabled { color: #cbd5e1; cursor: default; }
+.fare-day.planned { border-color: var(--text); }
+.fare-day.cheapest { box-shadow: inset 0 0 0 2px #fff; outline: 2px solid var(--ok); }
+.fare-dn { font-size: 0.68rem; }
+.fare-p { font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.settings summary { color: var(--text); }
