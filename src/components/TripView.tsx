@@ -86,7 +86,7 @@ export function TripView({ trip, onBack }: { trip: Trip; onBack: () => void }) {
         </details>
       </header>
       <div className="trip-meta">
-        <label>Vertrekdatum<input type="date" value={trip.startDate} onChange={(e) => e.target.value && set((t) => ({ ...t, startDate: e.target.value }))} /></label>
+        <label>Vertrek<input type="date" value={trip.startDate} onChange={(e) => e.target.value && set((t) => ({ ...t, startDate: e.target.value }))} /></label>
         <label>Reizigers<input type="number" min={1} max={20} value={trip.travelers} onChange={(e) => set((t) => ({ ...t, travelers: Math.max(1, Number(e.target.value) || 1) }))} /></label>
       </div>
 

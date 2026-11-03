@@ -68,7 +68,7 @@ export function FareCalendar({ from, to, planned, travelers, currency, onPick, l
           return (
             <button key={iso} type="button" disabled={!f || past}
               className={`fare-day${iso === planned ? ' planned' : ''}${f && f.price === min ? ' cheapest' : ''}`}
-              style={f ? { background: `color-mix(in srgb, var(--brand-2) ${Math.round(15 + t * 70)}%, white)` } : undefined}
+              style={f ? { background: `color-mix(in srgb, var(--accent) ${Math.round(12 + t * 73)}%, var(--paper))` } : undefined}
               title={f ? `${iso}: ${fmtMoney(f.price, currency)} p.p.${f.airline ? ` · ${f.airline}` : ''}${f.transfers != null ? ` · ${f.transfers === 0 ? 'direct' : `${f.transfers} overstap(pen)`}` : ''}` : `${iso}: geen prijs bekend`}
               onClick={() => f && onPick(iso, f.price, f.airline, f.link)}>
               <span className="fare-dn">{k + 1}</span>

@@ -43,7 +43,7 @@ export function LegCard({ trip, index, departDate, routing }: Props) {
   const setMode = (m: ModeId) => patch({ mode: m });
 
   return (
-    <div className="leg" style={{ borderColor: mode.color }}>
+    <div className="leg" style={{ borderLeftColor: mode.color }}>
       <div className="leg-head" onClick={() => setOpen(!open)}>
         <span className="leg-icon" style={{ background: mode.color }}>{mode.icon}</span>
         <div className="leg-summary">
