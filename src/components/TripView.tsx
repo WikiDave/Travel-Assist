@@ -12,6 +12,8 @@ import { computeRoute } from '../lib/geo';
 import { MODES } from '../lib/modes';
 import { routeKey } from '../lib/estimate';
 import { download, tripToGpx } from '../lib/gpx';
+import { cycleTheme, THEME_LABEL, useTheme } from '../lib/theme';
+import { ThemeIcon } from './ThemeButton';
 
 type Tab = 'route' | 'kaart' | 'prijzen' | 'verblijf' | 'dagboek' | 'budget' | 'paklijst';
 const TABS: { id: Tab; label: string; icon: string; mobileOnly?: boolean }[] = [
@@ -64,6 +66,7 @@ export function TripView({ trip, onBack }: { trip: Trip; onBack: () => void }) {
   const set = (fn: (t: Trip) => Trip) => updateTrip(trip.id, fn);
 
   const onSelectStop = useCallback((i: number) => setFocus(i), []);
+  const theme = useTheme();
 
   const exportJson = () => download(`${trip.name}.json`, JSON.stringify(trip, null, 2), 'application/json');
   const remove = () => {
@@ -81,6 +84,7 @@ export function TripView({ trip, onBack }: { trip: Trip; onBack: () => void }) {
             <button type="button" onClick={exportJson}>⬇️ Exporteer reis (JSON)</button>
             <button type="button" onClick={() => download(`${trip.name}.gpx`, tripToGpx(trip), 'application/gpx+xml')}>⬇️ Exporteer route (GPX)</button>
             <button type="button" onClick={() => window.print()}>🖨️ Afdrukken / PDF</button>
+            <button type="button" onClick={(e) => { e.preventDefault(); cycleTheme(); }}><ThemeIcon theme={theme} /> Thema: {THEME_LABEL[theme]}</button>
             <button type="button" className="danger" onClick={remove}>🗑️ Reis verwijderen</button>
           </div>
         </details>

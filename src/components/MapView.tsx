@@ -18,6 +18,9 @@ export function MapView({ trip, visible, focusIndex, onSelectStop }: Props) {
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
   const fitted = useRef('');
+  const lastBounds = useRef<L.LatLngBounds | null>(null);
+  /** Inzoomen uitgesteld omdat de kaart verborgen was (mobiel: ander tabblad). */
+  const needsFit = useRef(false);
 
   useEffect(() => {
     if (!el.current || map.current) return;
@@ -31,7 +34,17 @@ export function MapView({ trip, visible, focusIndex, onSelectStop }: Props) {
   }, []);
 
   useEffect(() => {
-    if (visible) setTimeout(() => map.current?.invalidateSize(), 50);
+    if (!visible) return;
+    const t = setTimeout(() => {
+      const m = map.current;
+      if (!m) return;
+      m.invalidateSize();
+      if (needsFit.current && lastBounds.current?.isValid()) {
+        m.fitBounds(lastBounds.current, { padding: [30, 30], maxZoom: 12 });
+        needsFit.current = false;
+      }
+    }, 50);
+    return () => clearTimeout(t);
   }, [visible]);
 
   useEffect(() => {
@@ -66,9 +79,12 @@ export function MapView({ trip, visible, focusIndex, onSelectStop }: Props) {
     });
     // Alleen opnieuw inzoomen als de stops zelf veranderd zijn, niet bij elke bewerking.
     const sig = trip.stops.map((s) => `${s.place.lat},${s.place.lon}`).join('|');
+    lastBounds.current = bounds;
     if (bounds.isValid() && sig !== fitted.current) {
       fitted.current = sig;
-      m.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+      // Een verborgen kaart heeft geen afmetingen; dan pas inzoomen zodra hij zichtbaar wordt.
+      if (el.current && el.current.offsetWidth > 0) m.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+      else needsFit.current = true;
     }
   }, [trip, onSelectStop]);
 

@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f1ede3" />
+    <script>
+      // Thema direct toepassen, vóór de eerste weergave (voorkomt een witte flits).
+      try {
+        var t = localStorage.getItem('travel-assist:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        var dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#191815');
+      } catch (e) {}
+    </script>
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Travel Assist – alles-in-één reisplanner</title>
