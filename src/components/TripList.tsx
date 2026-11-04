@@ -4,6 +4,7 @@ import { addDays, fmtDate, itinerary, legEstimate, parseDate, toISO } from '../l
 import { MODES } from '../lib/modes';
 import type { Trip } from '../types';
 import { ThemeButton } from './ThemeButton';
+import { LogoMark } from './LogoMark';
 
 /** Omtrek van de aarde: de schaal van de reismeter. */
 const EARTH_KM = 40075;
@@ -52,7 +53,7 @@ export function TripList({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div className="home">
       <header className="site-head">
-        <span className="logo">TRAVEL ASSIST<sup>®</sup></span>
+        <span className="logo"><LogoMark /> <span>TRAVEL ASSIST<sup>®</sup></span></span>
         <span className="head-right">
           <span className="status"><i className="dot" /> Klaar voor vertrek</span>
           <ThemeButton />

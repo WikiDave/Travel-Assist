@@ -176,7 +176,8 @@ label.btn.small { font-size: 0.84rem; }
   display: flex; justify-content: space-between; align-items: center;
   padding: 18px 0; border-bottom: 1.5px solid var(--ink);
 }
-.logo { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
+.logo-mark { flex-shrink: 0; transform: rotate(-4deg); }
 .logo sup { font-size: 0.6em; }
 .status { font: 600 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px; }
 .intro { padding: 36px 0 8px; }
