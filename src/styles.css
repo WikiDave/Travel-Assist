@@ -100,6 +100,17 @@ input, select, textarea {
   padding: 8px 10px; background: var(--paper);
   border: 1.5px solid var(--ink); border-radius: 10px;
 }
+/* Datum- en tijdvelden: Safari op de iPhone geeft deze een eigen minimumbreedte en negeert
+   anders de breedte van het vak, waardoor ze buiten hun veld uitsteken. */
+input[type='date'], input[type='time'] {
+  -webkit-appearance: none; appearance: none;
+  display: block; min-width: 0; max-width: 100%;
+  min-height: 2.6em; line-height: 1.3; text-align: left;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type='date']::-webkit-datetime-edit,
+input[type='time']::-webkit-datetime-edit { padding: 0; }
 input::placeholder, textarea::placeholder { color: #9a9486; }
 input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--lime); }
 label {
@@ -259,7 +270,8 @@ label.btn.small { font-size: 0.84rem; }
 .trip-name:hover { border-color: var(--line); }
 .trip-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 14px; border-bottom: 1.5px solid var(--line); }
 .trip-meta label { flex-direction: row; align-items: center; gap: 8px; margin: 0; }
-.trip-meta input { width: auto; padding: 4px 8px; font-size: 0.92rem; }
+.trip-meta input { width: auto; min-height: 0; padding: 4px 8px; font-size: 0.92rem; }
+.trip-meta input[type='date'] { width: 11em; }
 .trip-meta input[type='number'] { width: 64px; }
 .menu { position: relative; }
 .menu summary { list-style: none; }
@@ -306,10 +318,12 @@ label.btn.small { font-size: 0.84rem; }
 }
 @media (max-width: 480px) {
   .site-foot { grid-template-columns: 1fr; gap: 8px; }
-  .trip-meta { gap: 6px 12px; }
-  .trip-meta label { font-size: 0.6rem; gap: 6px; }
-  .trip-meta input { font-size: 0.85rem; padding: 3px 6px; }
-  .trip-meta input[type='number'] { width: 52px; }
+  /* Labels boven de velden: het datumveld krijgt dan de volle breedte van zijn kolom */
+  .trip-meta { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 10px; }
+  .trip-meta label { flex-direction: column; align-items: stretch; gap: 3px; font-size: 0.6rem; min-width: 0; }
+  .trip-meta input, .trip-meta input[type='date'], .trip-meta input[type='number'] { width: 100%; min-height: 2.6em; }
+  /* 16px voorkomt dat de iPhone inzoomt zodra je een veld aantikt */
+  .trip-meta input, .offer-form input, .capture input { font-size: 1rem; }
   .meter { margin-right: 6px; }
   .trip-name { font-size: 1.2rem; }
 }
